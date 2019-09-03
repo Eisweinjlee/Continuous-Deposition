@@ -57,11 +57,12 @@ u0 = [w0 p0];     %                     --> py(t) = py1t + py2t^2 + py3
 u0 = repmat(u0,1,Np); % u0 = 1*21 vectors
 % For each deposit, ui = [w1 w2 px1 px2 py1 py2 py3]
 
-% TODO: Problem is that the depv1 is negative.
+% TODO: Control the total input.
 umin = [cmin, Vmin];
 umax = [cmax, Vmax];
 
-A = [];  % Au <= b
+% Au <= b
+A = [];  
 b = [];
 for index=1:Np
     % position boundary
@@ -83,10 +84,11 @@ for index=1:Np
     A(index+15,((index-1)*(size(u0,2)/Np)+7)) = -1;     % t=0 y>cymin
     
     % soil dropping boundary
-%     A(index+18,((index-1)*(size(u0,2)/Np)+1)) = -1;     % t=T soil drop > 0
-%     A(index+18,((index-1)*(size(u0,2)/Np)+2)) = -T;
+    A(index+18,((index-1)*(size(u0,2)/Np)+2)) = 1;      % w2<0 (w(t)>0)
     
-    A(index+18,((index-1)*(size(u0,2)/Np)+2)) = 1;      % w2 < 0
+    A(index+21,((index-1)*(size(u0,2)/Np)+1)) = 50;     % deposit volume < Vmax
+    A(index+21,((index-1)*(size(u0,2)/Np)+2)) = 1000/3;
+    
 end
 
 b = [cxmax;cxmax;cxmax;
@@ -95,9 +97,11 @@ b = [cxmax;cxmax;cxmax;
     -cymin;-cymin;-cymin;
     cymax;cymax;cymax;
     -cymin;-cymin;-cymin;
-    0;0;0];
+    0;0;0;
+    Vmax;Vmax;Vmax];
 
-Aeq = []; % Au = b
+% Au = b
+Aeq = []; 
 beq = [];
 
 for i = 1:Np
@@ -116,6 +120,7 @@ beq = zeros(9,1);
 
 lb = []; % u >= lb
 ub = []; % u <= ub
+
 options = optimoptions(@fmincon,'MaxFunctionEvaluations',6000);
 tic
 u0 = fmincon(@(u)objfun_2d_fl_diffusion(R,X,Y,u,Sigma,H_now,Np,P,Pe,xf,yr,yl,dt,T,V0),u0,A,b,Aeq,beq,lb,ub,[],options);
