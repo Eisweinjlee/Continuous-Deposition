@@ -55,7 +55,7 @@ w0 = [1 1];       % w1 w2 --> w(t) = w1t + w2t^2
 p0 = [0 0 0 0 0]; % px1 px2 py1 py2 py3 --> px(t) = px1t + px2t^2
 u0 = [w0 p0];     %                     --> py(t) = py1t + py2t^2 + py3
 u0 = repmat(u0,1,Np); % u0 = 1*21 vectors
-
+% For each deposit, ui = [w1 w2 px1 px2 py1 py2 py3]
 
 % TODO: Problem is that the depv1 is negative.
 umin = [cmin, Vmin];
@@ -64,26 +64,29 @@ umax = [cmax, Vmax];
 A = [];  % Au <= b
 b = [];
 for index=1:Np
-    A(index,((index-1)*(size(u0,2)/Np)+3)) = T;         %at t=10 x<cxmax
+    % position boundary
+    A(index,((index-1)*(size(u0,2)/Np)+3)) = T;         % t=T x<cxmax
     A(index,((index-1)*(size(u0,2)/Np)+4)) = T^2;
-    
-    A(index+3,((index-1)*(size(u0,2)/Np)+3)) = -T;      %at t=10 x>cxmin
+
+    A(index+3,((index-1)*(size(u0,2)/Np)+3)) = -T;      % t=T x>cxmin
     A(index+3,((index-1)*(size(u0,2)/Np)+4)) = -T^2;
     
-    A(index+6,((index-1)*(size(u0,2)/Np)+5)) = T;       %at t=10 y<cymax
+    A(index+6,((index-1)*(size(u0,2)/Np)+5)) = T;       % t=T y<cymax
     A(index+6,((index-1)*(size(u0,2)/Np)+6)) = T^2;
     A(index+6,((index-1)*(size(u0,2)/Np)+7)) = 1;
     
-    A(index+9,((index-1)*(size(u0,2)/Np)+5)) = -T;      %at t=10 y>cymin
+    A(index+9,((index-1)*(size(u0,2)/Np)+5)) = -T;      % t=T y>cymin
     A(index+9,((index-1)*(size(u0,2)/Np)+6)) = -T^2;
     A(index+9,((index-1)*(size(u0,2)/Np)+7)) = -1;
     
-    A(index+12,((index-1)*(size(u0,2)/Np)+7)) = 1;      %py3 < cymax initial y
+    A(index+12,((index-1)*(size(u0,2)/Np)+7)) = 1;      % t=0 y<cymax
+    A(index+15,((index-1)*(size(u0,2)/Np)+7)) = -1;     % t=0 y>cymin
     
-    A(index+15,((index-1)*(size(u0,2)/Np)+7)) = -1;     %py3 > cymin initial y
+    % soil dropping boundary
+%     A(index+18,((index-1)*(size(u0,2)/Np)+1)) = -1;     % t=T soil drop > 0
+%     A(index+18,((index-1)*(size(u0,2)/Np)+2)) = -T;
     
-    A(index+18,((index-1)*(size(u0,2)/Np)+1)) = -T;     %at t=10 soil drop > 0
-    A(index+18,((index-1)*(size(u0,2)/Np)+2)) = -T^2;
+    A(index+18,((index-1)*(size(u0,2)/Np)+2)) = 1;      % w2 < 0
 end
 
 b = [cxmax;cxmax;cxmax;
@@ -98,14 +101,18 @@ Aeq = []; % Au = b
 beq = [];
 
 for i = 1:Np
-    Aeq(i,((i-1)*(size(u0,2)/Np)+3)) = 1;       %at T=10 vx = 0
+    Aeq(i,((i-1)*(size(u0,2)/Np)+3)) = 1;       %at t=T vx = 0
     Aeq(i,((i-1)*(size(u0,2)/Np)+4)) = 2*T;
     
-    Aeq(i+3,((i-1)*(size(u0,2)/Np)+5)) = 1;     %at T=10 vy = 0
+    Aeq(i+3,((i-1)*(size(u0,2)/Np)+5)) = 1;     %at t=T vy = 0
     Aeq(i+3,((i-1)*(size(u0,2)/Np)+6)) = 2*T;
     Aeq(i+3,((i-1)*(size(u0,2)/Np)+7)) = 0;
+    
+    Aeq(i+6,((i-1)*(size(u0,2)/Np)+1)) = 1;     % t=T soil drop = 0
+    Aeq(i+6,((i-1)*(size(u0,2)/Np)+2)) = T;
+    
 end
-beq = [0;0;0;0;0;0];
+beq = zeros(9,1);
 
 lb = []; % u >= lb
 ub = []; % u <= ub
@@ -118,12 +125,15 @@ toc
 
 for t = 0:dt:T  % drop T/dT points per trajectory
     TT = int16(t*10)+1;
+    
     depv1(TT) = (t)*u0(1) + (t^2)*u0(2);
     depx1(TT) = (t)*u0(3) + (t^2)*u0(4);
     depy1(TT) = (t)*u0(5) + (t^2)*u0(6) + u0(7);
+    
     depv2(TT) = (t)*u0(8) + (t^2)*u0(9);
     depx2(TT) = (t)*u0(10) + (t^2)*u0(11);
     depy2(TT) = (t)*u0(12) + (t^2)*u0(13) + u0(4);
+    
     depv3(TT) = (t)*u0(15) + (t^2)*u0(16);
     depx3(TT) = (t)*u0(17) + (t^2)*u0(18);
     depy3(TT) = (t)*u0(19) + (t^2)*u0(20) + u0(21);
@@ -154,16 +164,19 @@ title('Soil Deposition Volume')
 hold off
 
 
-%% Calculation of soil shape
+%% Soil deposition
 
 H(:,:,1)= H0;
 nd = 7;
+
 for i = 1:Np
     s(:,:,i) = H0*0;
     Vmax = 0;
+    
     for t = 0:dt:T
         Vmax = Vmax + (t)*u0((i-1)*nd+1) + (t^2)*u0((i-1)*nd+2);
     end
+    
     for t = 0:dt:T
         TT = int16(t*10)+1;
         depx = (t)*u0((i-1)*nd+3) + (t^2)*u0((i-1)*nd+4);
@@ -176,7 +189,9 @@ for i = 1:Np
         g(:,:,i) = function_input_2d(X,Y,c,V,Sigma,the(i),xf,yr,yl);
         s(:,:,i) = s(:,:,i) + g(:,:,i);
     end
+    
     H(:,:,i+1) = H(:,:,i) + s(:,:,i);
+    
     % ŠgŽU
     H_n = H(:,:,i+1);
     wl = 0.15;
@@ -192,8 +207,7 @@ for i = 1:Np
     %mesh(X,Y,H(:,:,i+1))
     %zlim([-50 40])
     %figure
-    for k = 1:1:50
-        
+    for k = 1:1:50    
         
         H_r = horzcat(zeros(mH,1),H_n(:,:,k));
         H_r(:,nH+1) = [];
@@ -205,7 +219,8 @@ for i = 1:Np
         H_u = vertcat(H_n(:,:,k),zeros(1,nH));
         H_u(1,:) = [];
         
-        H_n(:,:,k+1) = wc*H_n(:,:,k)+wl*H_l+wr*H_r+wu*H_u+wd*H_d;
+        H_n(:,:,k+1) = wc * H_n(:,:,k) + wl * H_l + wr * H_r +...
+            wu * H_u + wd * H_d;
         
         H_n(:,1,k+1) = H_n(:,2,k+1);
         H_n(:,nH,k+1) = H_n(:,nH-1,k+1);
@@ -224,7 +239,7 @@ for i = 1:Np
 end
 dimH = size(H);
 
-%% Œë·ŒvŽZ
+%% Development data part
 err1 = abs(R-H(:,:,dimH(3)));
 err2 = sum(sum(err1))*(lx/nx)*(ly/ny)/Vd;
 sum(sum(H(:,:,dimH(3))))
