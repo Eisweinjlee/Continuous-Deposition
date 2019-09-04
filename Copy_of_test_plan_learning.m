@@ -57,7 +57,6 @@ u0 = [w0 p0];     %                     --> py(t) = py1t + py2t^2 + py3
 u0 = repmat(u0,1,Np); % u0 = 1*21 vectors
 % For each deposit, ui = [w1 w2 px1 px2 py1 py2 py3]
 
-% TODO: Control the total input.
 umin = [cmin, Vmin];
 umax = [cmax, Vmax];
 
@@ -105,10 +104,10 @@ Aeq = [];
 beq = [];
 
 for i = 1:Np
-    Aeq(i,((i-1)*(size(u0,2)/Np)+3)) = 1;       %at t=T vx = 0
+    Aeq(i,((i-1)*(size(u0,2)/Np)+3)) = 1;       % t=T vx = 0
     Aeq(i,((i-1)*(size(u0,2)/Np)+4)) = 2*T;
     
-    Aeq(i+3,((i-1)*(size(u0,2)/Np)+5)) = 1;     %at t=T vy = 0
+    Aeq(i+3,((i-1)*(size(u0,2)/Np)+5)) = 1;     % t=T vy = 0
     Aeq(i+3,((i-1)*(size(u0,2)/Np)+6)) = 2*T;
     Aeq(i+3,((i-1)*(size(u0,2)/Np)+7)) = 0;
     
@@ -174,30 +173,41 @@ hold off
 H(:,:,1)= H0;
 nd = 7;
 
+% for each time of deposition
 for i = 1:Np
     s(:,:,i) = H0*0;
     Vmax = 0;
     
+    % Integrate the deposit volume Vmax
     for t = 0:dt:T
         Vmax = Vmax + (t)*u0((i-1)*nd+1) + (t^2)*u0((i-1)*nd+2);
     end
     
+    % deposition dynamics
     for t = 0:dt:T
         TT = int16(t*10)+1;
+        
         depx = (t)*u0((i-1)*nd+3) + (t^2)*u0((i-1)*nd+4);
         depy = (t)*u0((i-1)*nd+5) + (t^2)*u0((i-1)*nd+6) + u0((i-1)*nd+7);
-        depv   = (t)*u0((i-1)*nd+1) + (t^2)*u0((i-1)*nd+2);
+        depv = (t)*u0((i-1)*nd+1) + (t^2)*u0((i-1)*nd+2);
+        
         the(i) = atan((depy-Pe(2))/(depx-Pe(1)));
-        V = [depv/Vmax*V0];
-        c = [depx,depy];
-        %V = [V0*dt/T];
+        V = depv / Vmax * V0;   % deposit volume for model
+        c = [depx,depy];        % deposit center postion
+        %V = [V0*dt/T];         % constant deposit volume
+        
         g(:,:,i) = function_input_2d(X,Y,c,V,Sigma,the(i),xf,yr,yl);
         s(:,:,i) = s(:,:,i) + g(:,:,i);
     end
     
     H(:,:,i+1) = H(:,:,i) + s(:,:,i);
     
-    % ŠgŽU
+%     figure;
+%     mesh(X,Y,H(:,:,i+1))
+%     zlim([-50 40])
+%     figure; % for testing the diffusion
+    
+    % Diffusion coefficient
     H_n = H(:,:,i+1);
     wl = 0.15;
     wr = wl;
@@ -206,43 +216,51 @@ for i = 1:Np
     wc = 1-wl-wr-wu-wd;
     
     [mH,nH] = size(H_n);
-    j = 50;
+    diffussion_times = 50;
     
-    %figure
-    %mesh(X,Y,H(:,:,i+1))
-    %zlim([-50 40])
-    %figure
-    for k = 1:1:50    
+    % diffusion estimation
+    for k = 1:1:diffussion_times
         
         H_r = horzcat(zeros(mH,1),H_n(:,:,k));
-        H_r(:,nH+1) = [];
+        add_H_r = H_r(:,nH+1) * wr; 
+        H_r(:,nH+1) = []; % towards right
+        
         H_l = horzcat(H_n(:,:,k),zeros(mH,1));
-        H_l(:,1) = [];
+        add_H_l = H_l(:,1) * wl;
+        H_l(:,1) = []; % towards left
         
         H_d = vertcat(zeros(1,nH),H_n(:,:,k));
-        H_d(mH+1,:) = [];
+        add_H_d = H_d(mH+1,:) * wd;
+        H_d(mH+1,:) = []; % towards down
+        
         H_u = vertcat(H_n(:,:,k),zeros(1,nH));
-        H_u(1,:) = [];
+        add_H_u = H_u(1,:) * wu;
+        H_u(1,:) = []; % towards up
         
         H_n(:,:,k+1) = wc * H_n(:,:,k) + wl * H_l + wr * H_r +...
-            wu * H_u + wd * H_d;
+            wu * H_u + wd * H_d; % diffusion
+
+        H_n(:,nH,k+1) = H_n(:,nH,k+1) + add_H_r; % out of boundary
+        H_n(:,1,k+1) = H_n(:,1,k+1) + add_H_l;
+        H_n(mH,:,k+1) = H_n(mH,:,k+1) + add_H_d;
+        H_n(1,:,k+1) = H_n(1,:,k+1) + add_H_u;
         
-        H_n(:,1,k+1) = H_n(:,2,k+1);
-        H_n(:,nH,k+1) = H_n(:,nH-1,k+1);
-        H_n(1,:,k+1) = H_n(2,:,k+1);
-        H_n(mH,:,k+1) = H_n(mH-1,:,k+1);
-                
-        %mesh(X,Y,H_n(:,:,k+1))
-        %zlim([-50 40])
-        %xlabel('x[cm]')
-        %ylabel('y[cm]')
-        %zlabel('h[cm]')
+%         % test
+%         diffusion_error = H_n(:,:,k+1) - H(:,:,i+1);
+%         diffusion_error_sum(k,i) = sum(H_n(:,:,k+1) - H(:,:,i+1),'all'); 
+%         
+%         % test
+%         mesh(X,Y,diffusion_error)
+%         zlim([-50 40])
+%         xlabel('x[cm]')
+%         ylabel('y[cm]')
+%         zlabel('h[cm]')
+%         pause(0.5)
     end
-    
-    H(:,:,i+1) = H_n(:,:,j+1);
-    sum(sum(H(:,:,i+1) - H(:,:,i)))*(lx/nx)*(ly/ny)/V;
+    H(:,:,i+1) = H_n(:,:,k+1);
 end
-dimH = size(H);
+
+dimH = size(H); % 93x99x4
 
 %% Development data part
 err1 = abs(R-H(:,:,dimH(3)));
@@ -252,6 +270,7 @@ MedH =  imgaussfilt(H(:,:,dimH(3)));
 sum(sum(MedH))
 
 %% Plot
+
 % The 3 times deposition result
 for i = 1:dimH(3)
     figure
