@@ -51,14 +51,16 @@ Np = 3;         % number of times of deposition
 
 %% Optimal continuous deposition
 H_now = H0;
-w0 = [1 1];       % w1 w2 --> w(t) = w1t + w2t^2
-p0 = [0 0 0 0 0]; % px1 px2 py1 py2 py3 --> px(t) = px1t + px2t^2
-u0 = [w0 p0];     %                     --> py(t) = py1t + py2t^2 + py3
-u0 = repmat(u0,1,Np); % u0 = 1*21 vectors
-% For each deposit, ui = [w1 w2 px1 px2 py1 py2 py3]
 
-umin = [cmin, Vmin];
-umax = [cmax, Vmax];
+% initial variables of optimization
+% w0 = [100 0];       % w1 w2 --> w(t) = w1t + w2t^2
+% p0 = [15 0 0 0 0]; % px1 px2 py1 py2 py3 --> px(t) = px1t + px2t^2
+% u0 = [w0 p0];     %                     --> py(t) = py1t + py2t^2 + py3
+% u0 = repmat(u0,1,Np); % u0 = 1*21 vectors
+load good_u0.mat % directly load the good one
+
+% umin = [cmin, Vmin];
+% umax = [cmax, Vmax];
 
 % Au <= b
 A = [];  
@@ -122,7 +124,8 @@ ub = []; % u <= ub
 
 options = optimoptions(@fmincon,'MaxFunctionEvaluations',6000);
 tic
-u0 = fmincon(@(u)objfun_2d_fl_diffusion(R,X,Y,u,Sigma,H_now,Np,P,Pe,xf,yr,yl,dt,T,V0),u0,A,b,Aeq,beq,lb,ub,[],options);
+% u0 = fmincon(@(u)objfun_2d_fl_diffusion(R,X,Y,u,Sigma,H_now,Np,P,Pe,xf,yr,yl,dt,T,V0),u0,A,b,Aeq,beq,lb,ub,[],options);
+u0 = fmincon(@(u)objfun_2d_fl_diffusion_LI(R,X,Y,u,Sigma,H_now,Np,P,Pe,xf,yr,yl,dt,T,V0),u0,A,b,Aeq,beq,lb,ub,[],options);
 toc
 
 %% Integrate to the trajectory
