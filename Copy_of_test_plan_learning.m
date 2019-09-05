@@ -38,10 +38,8 @@ lambday = 1277;
 % lambdax = 750;
 % lambday = 1400;
 Sigma = [lambdax 0;0 lambday];
-
-% 予測分散
 Sigma_bar = 0.5 * Sigma;
-the = atan((Pc(2)-Pe(2))/(Pc(1)-Pe(1)));    %ショベルのアームとダンプ壁面のなす角
+the = atan((Pc(2)-Pe(2))/(Pc(1)-Pe(1))); % angle between arm and truck wall
 
 % Parameter for optimal continuous deposition
 T = 10;         % time per one trajectory
@@ -210,6 +208,7 @@ for i = 1:Np
 %     zlim([-50 40])
 %     figure; % for testing the diffusion
     
+%------- Diffusion Section------
     % Diffusion coefficient
     H_n = H(:,:,i+1);
     wl = 0.15;
@@ -266,11 +265,11 @@ end
 dimH = size(H); % 93x99x4
 
 %% Development data part
-err1 = abs(R-H(:,:,dimH(3)));
-err2 = sum(sum(err1))*(lx/nx)*(ly/ny)/Vd;
-sum(sum(H(:,:,dimH(3))))
-MedH =  imgaussfilt(H(:,:,dimH(3)));
-sum(sum(MedH))
+% err1 = abs(R-H(:,:,dimH(3)));
+% err2 = sum(sum(err1))*(lx/nx)*(ly/ny)/Vd;
+% sum(sum(H(:,:,dimH(3))))
+% MedH =  imgaussfilt(H(:,:,dimH(3)));
+% sum(sum(MedH))
 
 %% Plot
 
