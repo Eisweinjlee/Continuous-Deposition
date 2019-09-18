@@ -1,36 +1,36 @@
 Mtcounter = Mtcounter + 1;
 
-input('take 1st Mt image >>');
+disp('take 1st Mt image ...(1/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 1, Mtcounter) = trimmedM;
 
-input('take 2nd Mt image >>');
+disp('take 2nd Mt image ...(2/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 2, Mtcounter) = trimmedM;
 
-input('take 3rd Mt image >>');
+disp('take 3rd Mt image ...(3/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 3, Mtcounter) = trimmedM;
 
-input('take 4th Mt image >>');
+disp('take 4th Mt image ...(4/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 4, Mtcounter) = trimmedM;
 
-input('take 5th Mt image >>');
+input('take 5th Mt image ...(5/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 5, Mtcounter) = trimmedM;
 
-input('take 6th Mt image >>');
+disp('take 6th Mt image ...(6/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
