@@ -13,6 +13,10 @@ This repository is containing files of the research project of Yamakita Lab, Tok
 
 However, those programs are not able to be provided because of copyright.
 
+To obtain the soil shape, we are using the depth sensor on Kinect camera to capture the data.
+- `kinect_new.m` is a program to retreive the soil shape data from our hardware system on MATLAB.
+- `mainMt.m` is used in `kinect_new.m`.
+
 Yang
 
-Sep 4th, 2019
+Sep 18th, 2019
