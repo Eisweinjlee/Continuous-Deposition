@@ -2,6 +2,8 @@
 % This program is applied on the specified system in my proj.
 % Author: Li Yang
 % Date: September 18, 2019
+close all
+clear
 
 %% 1. Initialization
 
@@ -17,14 +19,18 @@ if ~exist('depthDevice', 'var')
     depthDevice = imaq.VideoDevice('kinect',2);
 end % find the depth device
 
+input('Press Enter to continue:');
+
 %% 2. retrieve the data from Kinect (from demo code)
 
 dep = getDepth(depthDevice, 1000);
 
 % specify range of hand
 if ~exist('xrangeHand', 'var') && ~exist('yrangeHand', 'var')
-xrangeHand = input('input range of Hand (horizon) >> ');
-yrangeHand = input('input range of Hand (vertica) >> ');
+% xrangeHand = input('input range of Hand (horizon) >> ');
+% yrangeHand = input('input range of Hand (vertica) >> '); % not used
+xrangeHand = [];
+yrangeHand = [];
 end
 
 % % specify range of Mt
@@ -34,7 +40,7 @@ end
 % end
 
 % take first pic of hand
-input('take a picture of hand');
+% input('take a picture (press Enter):');
 dep = getDepth(depthDevice, 1000);
 trimmedH = plotDepth(dep, xrangeHand, yrangeHand);
 
@@ -50,12 +56,12 @@ picHand = trimmedH;
 picMt = zeros(424, 512);
 Mtcounter = 0;
 
-run mainMt % TODO: There are 6 times, maybe we can make it less.
+run mainMt 
 
 %% 3. Ask to save the data
 
 if exist('picHand', 'var') || exist('picMt', 'var')
-    if input('save the data? >> [y/n]', 's') == 'y'||'Y'
+    if input('save the data? >> [y/n]', 's') == 'y'
         % save picarray and picarray2 data into file
         
         name = input('pic name >> ', 's');
@@ -68,8 +74,7 @@ end
 % (http://www.codeproject.com/Articles/317974/KinectDepthSmoothing)
 % load('data\%s-mt.mat', name)
 
-if input('Normalize the soil shape? >> [y/n]', 's') == 'y'||'Y'
-    
+if input('Normalize the data? >> [y/n]', 's') == 'y'
     depthImage = picMt(:,:,1);
     [row,col] = size(depthImage);
     widthBound = row - 1;
@@ -87,7 +92,7 @@ if input('Normalize the soil shape? >> [y/n]', 's') == 'y'||'Y'
     %The main loop
     for x = 1:row
         for y = 1:col
-            %Only for pixels with 0 depth value; else skip
+            % Only for pixels with 0 depth value; else skip
             if filledDepth(x,y) == 0
                 zeroPixels = zeroPixels+1;
                 % values set to identify a positive filter result.
@@ -178,6 +183,5 @@ if input('Normalize the soil shape? >> [y/n]', 's') == 'y'||'Y'
     % save('','dep3')
     % this saved data has been cut to 93x99 and filtered. ready for finding
     % error.
+    
 end
-
-

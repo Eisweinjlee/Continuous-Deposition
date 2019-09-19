@@ -24,7 +24,7 @@ r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
 picMt(:,:, 4, Mtcounter) = trimmedM;
 
-input('take 5th Mt image ...(5/6)');
+disp('take 5th Mt image ...(5/6)');
 dep = getDepth(depthDevice, 1000);
 r = size(dep);
 trimmedM = plotDepth(dep,  1:r(2), 1:r(1) );
