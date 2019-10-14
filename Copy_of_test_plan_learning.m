@@ -15,8 +15,8 @@ nl = 2.5;   % a ratio of the vessel to the bucket
 Vmin = 0;   % bucket load minimum
 Vmax = Vv/nl;  % bucket load maximum
 
-%Vmax = 1.793466009964965e+05; % old bucket
-%Vmax = 2.6e+05; % new bucket
+% Vmax = 1.793466009964965e+05; % old bucket
+% Vmax = 2.6e+05; % new bucket
 
 % The boundary for deposition operation
 cxmin = xr + blx/4;
@@ -61,13 +61,13 @@ load good_u0.mat % directly load the good one
 % umax = [cmax, Vmax];
 
 % Au <= b
-A = [];  
+A = [];
 b = [];
 for index=1:Np
     % position boundary
     A(index,((index-1)*(size(u0,2)/Np)+3)) = T;         % t=T x<cxmax
     A(index,((index-1)*(size(u0,2)/Np)+4)) = T^2;
-
+    
     A(index+3,((index-1)*(size(u0,2)/Np)+3)) = -T;      % t=T x>cxmin
     A(index+3,((index-1)*(size(u0,2)/Np)+4)) = -T^2;
     
@@ -100,7 +100,7 @@ b = [cxmax;cxmax;cxmax;
     Vmax;Vmax;Vmax];
 
 % Au = b
-Aeq = []; 
+Aeq = [];
 beq = [];
 
 for i = 1:Np
@@ -174,6 +174,9 @@ hold off
 H(:,:,1)= H0;
 nd = 7;
 
+H_show = H0;
+
+
 % for each time of deposition
 for i = 1:Np
     s(:,:,i) = H0*0;
@@ -185,6 +188,7 @@ for i = 1:Np
     end
     
     % deposition dynamics
+    figure(88)
     for t = 0:dt:T
         TT = int16(t*10)+1;
         
@@ -199,16 +203,37 @@ for i = 1:Np
         
         g(:,:,i) = function_input_2d(X,Y,c,V,Sigma,the(i),xf,yr,yl);
         s(:,:,i) = s(:,:,i) + g(:,:,i);
+        
+% %         show the input
+%         mesh(X,Y,s(:,:,i))
+%         xlabel('x[mm]')
+%         ylabel('y[mm]')
+%         zlabel('h[mm]')
+%         zlim([-50 40])
+%         pause(0.1)
+        
+        % shoot video the input process
+        H_show(:,:,end+1) = H_show(:,:,end) + g(:,:,i);
+        mesh(X,Y,H_show(:,:,end))
+        xlabel('x[mm]')
+        ylabel('y[mm]')
+        zlabel('h[mm]')
+        zlim([-50 40])
+%         view([-0.4 1.1])
+        drawnow
+        F(length(H_show(1,1,:))-1) = getframe(gcf);
+        pause(0.1)
+        
     end
     
     H(:,:,i+1) = H(:,:,i) + s(:,:,i);
     
-%     figure;
-%     mesh(X,Y,H(:,:,i+1))
-%     zlim([-50 40])
-%     figure; % for testing the diffusion
+    %     figure;
+    %     mesh(X,Y,H(:,:,i+1))
+    %     zlim([-50 40])
+    %     figure; % for testing the diffusion
     
-%------- Diffusion Section------
+    %------- Diffusion Section------
     % Diffusion coefficient
     H_n = H(:,:,i+1);
     wl = 0.15;
@@ -224,7 +249,7 @@ for i = 1:Np
     for k = 1:1:diffussion_times
         
         H_r = horzcat(zeros(mH,1),H_n(:,:,k));
-        add_H_r = H_r(:,nH+1) * wr; 
+        add_H_r = H_r(:,nH+1) * wr;
         H_r(:,nH+1) = []; % towards right
         
         H_l = horzcat(H_n(:,:,k),zeros(mH,1));
@@ -241,7 +266,7 @@ for i = 1:Np
         
         H_n(:,:,k+1) = wc * H_n(:,:,k) + wl * H_l + wr * H_r +...
             wu * H_u + wd * H_d; % diffusion
-
+        
         H_n(:,nH,k+1) = H_n(:,nH,k+1) + add_H_r; % out of boundary
         H_n(:,1,k+1) = H_n(:,1,k+1) + add_H_l;
         H_n(mH,:,k+1) = H_n(mH,:,k+1) + add_H_d;
@@ -249,8 +274,8 @@ for i = 1:Np
         
 %         % test
 %         diffusion_error = H_n(:,:,k+1) - H(:,:,i+1);
-%         diffusion_error_sum(k,i) = sum(H_n(:,:,k+1) - H(:,:,i+1),'all'); 
-%         
+%         diffusion_error_sum(k,i) = sum(H_n(:,:,k+1) - H(:,:,i+1),'all');
+        
 %         % test
 %         mesh(X,Y,diffusion_error)
 %         zlim([-50 40])
@@ -273,15 +298,15 @@ dimH = size(H); % 93x99x4
 
 %% Plot
 
-% The 3 times deposition result
-for i = 1:dimH(3)
-    figure
-    mesh(X,Y,H(:,:,i))
-    xlabel('x[mm]')
-    ylabel('y[mm]')
-    zlabel('h[mm]')
-    zlim([-50 40])
-end
+% % The 3 times deposition result
+% for i = 1:dimH(3)
+%     figure
+%     mesh(X,Y,H(:,:,i))
+%     xlabel('x[mm]')
+%     ylabel('y[mm]')
+%     zlabel('h[mm]')
+%     zlim([-50 40])
+% end
 
 % % Reference
 % figure
@@ -290,7 +315,7 @@ end
 % ylabel('y[mm]')
 % zlabel('h[mm]')
 % zlim([-50 40])
-% 
+%
 % % Empty vessel
 % figure
 % mesh(X,Y,vessel)
@@ -298,3 +323,8 @@ end
 % ylabel('y[mm]')
 % zlabel('h[mm]')
 % zlim([-50 40])
+
+vvv = VideoWriter('test2','MPEG-4');
+open(vvv)
+writeVideo(vvv,F)
+close(vvv)
